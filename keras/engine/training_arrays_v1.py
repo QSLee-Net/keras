@@ -245,8 +245,8 @@ def model_iteration(model,
 
   callbacks.model.stop_training = False
   callbacks._call_begin_hook(mode)
-
-  initial_epoch = model._maybe_load_initial_epoch_from_ckpt(initial_epoch, mode)
+  initial_epoch, initial_step = model._maybe_load_initial_counters_from_ckpt(
+      steps_per_epoch, initial_epoch, mode)
 
   for epoch in range(initial_epoch, epochs):
     if callbacks.model.stop_training:
@@ -270,7 +270,7 @@ def model_iteration(model,
         # Loop over dataset for the specified number of steps.
         target_steps = steps_per_epoch
 
-      step = 0
+      step = initial_step
       while step < target_steps:
         batch_logs = {'batch': step, 'size': 1}
         callbacks._call_batch_hook(mode, 'begin', step, batch_logs)
@@ -335,6 +335,7 @@ def model_iteration(model,
 
         if callbacks.model.stop_training:
           break
+      initial_step = 0
     else:
       # Sample-wise loop.
       index_array = np.arange(num_samples_or_steps)

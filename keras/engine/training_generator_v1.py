@@ -187,8 +187,8 @@ def model_iteration(model,
 
   callbacks.model.stop_training = False
   callbacks._call_begin_hook(mode)
-
-  initial_epoch = model._maybe_load_initial_epoch_from_ckpt(initial_epoch, mode)
+  initial_epoch, initial_step = model._maybe_load_initial_counters_from_ckpt(
+      steps_per_epoch, initial_epoch, mode, initial_step=0)
 
   for epoch in range(initial_epoch, epochs):
     if callbacks.model.stop_training:
@@ -207,7 +207,7 @@ def model_iteration(model,
       # Loop over dataset for the specified number of steps.
       target_steps = steps_per_epoch
 
-    step = 0
+    step = initial_step
     while step < target_steps:
       batch_data = _get_next_batch(generator)
       if batch_data is None:
@@ -317,6 +317,7 @@ def model_iteration(model,
     # Recreate dataset iterator for the next epoch.
     if reset_dataset_after_each_epoch and epoch < epochs - 1:
       generator = tf.compat.v1.data.make_one_shot_iterator(original_dataset)
+    initial_step = 0
 
   model._successful_loop_finish = True
   callbacks._call_end_hook(mode)

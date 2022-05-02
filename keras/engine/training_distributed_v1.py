@@ -210,16 +210,16 @@ def experimental_tpu_fit_loop(model,
   target_steps = len(steps_to_run)
 
   callbacks._call_begin_hook(mode)
-
-  initial_epoch = model._maybe_load_initial_epoch_from_ckpt(initial_epoch, mode)
+  initial_epoch, initial_step = model._maybe_load_initial_counters_from_ckpt(
+      steps_per_epoch, initial_epoch, mode, initial_step=0)
 
   for epoch in range(initial_epoch, epochs):
     dist_utils._reset_metrics(model)
     callbacks.on_epoch_begin(epoch)
     epoch_logs = {}
-    step_index = 0
+    step_index = initial_step
     prev_step_count = None
-    current_step = 0
+    current_step = initial_step
     while current_step < target_steps:
       step_count = steps_to_run[current_step]
       batch_logs = {'batch': step_index, 'size': 1, 'num_steps': step_count}
@@ -269,6 +269,8 @@ def experimental_tpu_fit_loop(model,
     callbacks.on_epoch_end(epoch, epoch_logs)
     if callbacks.model.stop_training:
       break
+    initial_step = 0
+
   model._successful_loop_finish = True
   callbacks._call_end_hook(mode)
 

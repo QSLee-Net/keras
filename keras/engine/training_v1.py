@@ -2733,28 +2733,38 @@ class Model(training_lib.Model):
 
   @property
   def _feed_sample_weights(self):
-    return [e.sample_weight for e in self._training_endpoints
-            if e.sample_weight is not None]
+    return [
+        e.sample_weight
+        for e in self._training_endpoints
+        if e.sample_weight is not None
+    ]
 
-  def _maybe_load_initial_epoch_from_ckpt(self, initial_epoch, mode):
+  def _maybe_load_initial_epoch_from_ckpt(self,
+                                          steps_per_epoch,
+                                          initial_epoch,
+                                          mode,
+                                          initial_step=0):
     """Maybe load initial epoch from ckpt considering possible worker recovery.
 
     Refer to tensorflow/python/keras/distribute/worker_training_state.py
     for more information.
 
     Args:
+      steps_per_epoch: The umber of steps per epoch.
       initial_epoch: The original initial_epoch user passes in in `fit()`.
       mode: The mode for running `model.fit()`.
+      initial_step: The original initial_step user passes in in `fit()`.
 
     Returns:
       If the training is recovering from previous failure under multi-worker
-      training setting, return the epoch the training is supposed to continue
-      at. Otherwise, return the `initial_epoch` the user passes in.
+      training setting, return the (epoch, step) the training is supposed to
+      continue at. Otherwise, return the `initial_epoch, initial_step` the user
+      passes in.
     """
     if self._training_state is not None:
-      return self._training_state.maybe_load_initial_epoch_from_ckpt(
-          initial_epoch, mode)
-    return initial_epoch
+      return self._training_state.maybe_load_initial_counters_from_ckpt(
+          steps_per_epoch, initial_epoch, mode, initial_step=initial_step)
+    return (initial_epoch, initial_step)
 
   def _get_training_eval_metrics(self):
     """Returns all the metrics that are to be reported.
